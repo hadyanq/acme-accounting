@@ -37,8 +37,9 @@ Every ticket has
                              pagination. This is only for creating logic 
                              testing.
 - `POST api/v1/tickets`    - creates a ticket. It accepts `type` and `companyId`
-- `GET  api/v1/report`     - starts the processing of existing data and
-                             builds a report.        
+- `POST  api/v1/reports`   - starts the processing of existing data and
+                             builds a report.
+- `GET  api/v1/reports`    - get status of last report building process.
 
 **Ticket Creation Rules**
 
@@ -116,7 +117,7 @@ time to get the results. Maybe this is a good time to refactor the code.
 
 **Acceptance**
 
-1. The endpoint should be respond faster than the existing implementation
+1. The endpoint should respond faster than the existing implementation
 2. Documents should process in the background and the client should be able
    to check the status of the processing.
 3. Metrics should be recorded for discussion.
@@ -152,7 +153,7 @@ docker-compose up -d
 
 3. Run migrations
 ```sh
-npm run db:migrate
+npm run migrate
 ```
 
 4. Start the server
