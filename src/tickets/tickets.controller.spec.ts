@@ -132,8 +132,36 @@ describe('TicketsController', () => {
         );
       });
 
-      it('if there is no secretary, throw', async () => {
+      it('if there is no secretary, assign to the director', async () => {
         const company = await Company.create({ name: 'test' });
+        const director = await User.create({
+          name: 'Bob',
+          role: UserRole.director,
+          companyId: company.id,
+        });
+
+        const ticket = await controller.create({
+          companyId: company.id,
+          type: TicketType.registrationAddressChange,
+        });
+
+        expect(ticket.assigneeId).toBe(director.id);
+      });
+
+      it('if there are multiple directors, throw', async () => {
+        const company = await Company.create({ name: 'test' });
+        await User.bulkCreate([
+          {
+            name: 'Bob',
+            role: UserRole.director,
+            companyId: company.id,
+          },
+          {
+            name: 'Alice',
+            role: UserRole.director,
+            companyId: company.id,
+          },
+        ]);
 
         await expect(
           controller.create({
@@ -142,10 +170,84 @@ describe('TicketsController', () => {
           }),
         ).rejects.toEqual(
           new ConflictException(
-            `Cannot find user with role corporateSecretary to create a ticket`,
+            `Multiple users with role director. Cannot create a ticket`,
           ),
         );
       });
+
+      it('rejects duplicate registrationAddressChange ticket', async () => {
+        const company = await Company.create({ name: 'test' });
+        await User.create({
+          name: 'Test User',
+          role: UserRole.corporateSecretary,
+          companyId: company.id,
+        });
+
+        await controller.create({
+          companyId: company.id,
+          type: TicketType.registrationAddressChange,
+        });
+
+        await expect(
+          controller.create({
+            companyId: company.id,
+            type: TicketType.registrationAddressChange,
+          }),
+        ).rejects.toEqual(
+          new ConflictException(`Registration address change already exists`),
+        );
+      });
+    });
+
+    describe('strikeOff', () => {
+      it('creates strikeOff ticket', async () => {
+        const company = await Company.create({ name: 'test' });
+        const director = await User.create({
+          name: 'Bob',
+          role: UserRole.director,
+          companyId: company.id,
+        });
+
+        const ticket = await controller.create({
+          companyId: company.id,
+          type: TicketType.strikeOff,
+        });
+
+        expect(ticket.category).toBe(TicketCategory.management);
+        expect(ticket.assigneeId).toBe(director.id);
+        expect(ticket.status).toBe(TicketStatus.open);
+      });
+
+      it('if there are multiple directors, throw', async () => {
+        const company = await Company.create({ name: 'test' });
+        await User.bulkCreate([
+          {
+            name: 'Bob',
+            role: UserRole.director,
+            companyId: company.id,
+          },
+          {
+            name: 'Alice',
+            role: UserRole.director,
+            companyId: company.id,
+          },
+        ]);
+
+        await expect(
+          controller.create({
+            companyId: company.id,
+            type: TicketType.strikeOff,
+          }),
+        ).rejects.toEqual(
+          new ConflictException(
+            `Multiple users with role director. Cannot create a ticket`,
+          ),
+        );
+      });
+
+      // it('resolve all active tickets', async () => {
+
+      // })
     });
   });
 });
